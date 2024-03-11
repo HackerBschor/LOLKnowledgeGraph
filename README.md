@@ -13,6 +13,29 @@ what you don't have during a tournament or the champion selection phase.
 
 ## Solution 
 
+## DATA
+
+* https://www.kaggle.com/datasets/gyejr95/league-of-legendslol-ranked-games-2020-ver1?select=challenger_match_V2.csv
+
+## Installation
+
+### Database
+
+```postgresql
+CREATE DATABASE <database>;
+CREATE USER <user> WITH PASSWORD '<password>';
+ALTER DATABASE <database> OWNER TO <user>;
+GRANT ALL ON database <database> TO <user>;
+```
+### Config File
+
+```ini
+[PostgreSQL]
+host=<host>
+database=<database>
+user=<user>
+password=<password>
+```
 
 ## Disclaimer 
 
