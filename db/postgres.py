@@ -44,10 +44,12 @@ class PostgreSQLConnector:
 
 
 def execute(sql_file: str) -> None:
-    psql = PostgreSQLConnector.create_from_config("../config.ini")
+    psql = PostgreSQLConnector.create_from_config("config.ini")
     cur = psql.connect()
     with open(sql_file, "r") as f:
-        cur.execute(f.read())
+        sql = f.read()
+        print(sql)
+        cur.execute(sql)
     cur.close()
 
 

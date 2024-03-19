@@ -15,7 +15,7 @@ what you don't have during a tournament or the champion selection phase.
 
 ## DATA
 
-* https://www.kaggle.com/datasets/gyejr95/league-of-legendslol-ranked-games-2020-ver1?select=challenger_match_V2.csv
+* https://www.kaggle.com/datasets/gyejr95/league-of-legendslol-ranked-games-2020-ver1
 
 ## Installation
 

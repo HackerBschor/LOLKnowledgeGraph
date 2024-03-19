@@ -6,8 +6,8 @@ DROP TABLE IF EXISTS item_tags;
 DROP TABLE IF EXISTS item_builds_from;
 DROP TABLE IF EXISTS summoner_spells;
 DROP TABLE IF EXISTS challenger_matches;
-DROP TABLE player;
-DROP TABLE plays_in;
+DROP TABLE IF EXISTS player;
+DROP TABLE IF EXISTS plays_in;
 
 
 CREATE TABLE champions (

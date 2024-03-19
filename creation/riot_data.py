@@ -21,7 +21,8 @@ def download_data(url):
         return print(f'Error: {response}')
 
     print(f"Done")
-    return pd.DataFrame.from_dict(response.json()["data"], orient='index')
+
+    return response.json()
 
 
 def download_riot_data(ressource, url='https://ddragon.leagueoflegends.com/cdn', version='14.5.1', language='en_US'):
@@ -37,6 +38,10 @@ def insert_champions(file):
     cursor = psql.connect()
 
     for _, champion in df.iterrows():
+        champion["info"] = json.loads(champion["info"].replace("\'", "\""))
+        champion["image"] = json.loads(champion["image"].replace("\'", "\""))
+        champion["stats"] = json.loads(champion["stats"].replace("\'", "\""))
+
         cursor.execute(
             """INSERT INTO champions (id, version, key, name, title, blurb, info, image, partype, stats)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
@@ -146,7 +151,8 @@ def save_all_items(output):
 
 def save_all_champions(output):
     champion_json = download_riot_data("champion.json")
-    champion_json.to_csv(output)
+    champions = pd.DataFrame.from_dict(champion_json["data"], orient="index")
+    champions.to_csv(output)
 
 
 if __name__ == '__main__':
@@ -154,11 +160,13 @@ if __name__ == '__main__':
         prog='Riot Data Creator',
         description='Inserts riot data into the database')
 
-    parser.add_argument('method', choices=["save_all_items", "save_all_champions"])
+    parser.add_argument('method', choices=["save_all_items", "save_all_champions", "insert_champions"])
     parser.add_argument('-f', '--file')
     args = parser.parse_args()
 
     if args.method == 'save_all_items':
+        save_all_items(args.file)
+    elif args.method == "save_all_champions":
         save_all_champions(args.file)
     else:
-        save_all_champions(args.file)
+        insert_champions(args.file)

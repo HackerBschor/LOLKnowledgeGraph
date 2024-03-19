@@ -41,3 +41,7 @@ SET position = CASE
         ELSE role END
     ELSE lane END
 WHERE 1=1;
+
+CREATE SEQUENCE teams_idx;
+ALTER TABLE teams ADD COLUMN id INT;
+UPDATE teams AS t SET id = (SELECT NEXTVAL('teams_idx')) FROM (SELECT id FROM teams) AS subquery WHERE t.id = subquery.id;
