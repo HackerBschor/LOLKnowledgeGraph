@@ -66,6 +66,7 @@ CREATE TABLE item_tags (
 CREATE TABLE item_builds_from (
     id INTEGER,
     builds_from INTEGER,
+    amount INTEGER,
     PRIMARY KEY (id, builds_from)
 );
 

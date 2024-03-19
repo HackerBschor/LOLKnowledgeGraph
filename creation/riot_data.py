@@ -55,7 +55,7 @@ def insert_champions(file):
     psql.close()
 
 
-def insert_item(file):
+def insert_items(file):
     df = pd.read_csv(file, encoding="utf-8").replace({np.nan: None})
     idx = df.columns[0]
 
@@ -63,6 +63,12 @@ def insert_item(file):
     cursor = psql.connect()
 
     for i, item in df.iterrows():
+        item["image"] = None if item["image"] is None else ast.literal_eval(item["image"])
+        item["gold"] = None if item["gold"] is None else ast.literal_eval(item["gold"])
+        item["maps"] = None if item["maps"] is None else ast.literal_eval(item["maps"])
+        item["stats"] = None if item["stats"] is None else ast.literal_eval(item["stats"])
+        item["effect"] = None if item["effect"] is None else ast.literal_eval(item["effect"])
+
         cursor.execute(
             """INSERT INTO items (
                 id, name, description, colloq, plaintext, image, gold, maps, stats, depth, instore, effect, consumed, 
@@ -79,12 +85,18 @@ def insert_item(file):
                 cursor.execute("INSERT INTO item_tags (id, tag) VALUES (%s, %s)", (item[idx], tag))
 
         if item["from"] is not None:
-            for builds_from in ast.literal_eval(item["from"]):
+            builds_from = {}
+            for builds_from_item in ast.literal_eval(item["from"]):
                 if builds_from is None:
                     continue
+                if builds_from_item not in builds_from:
+                    builds_from[builds_from_item] = 0
+                builds_from[builds_from_item] += 1
+
+            for builds_from_item in builds_from:
                 cursor.execute(
-                    "INSERT INTO item_builds_from (id, builds_from) VALUES (%s, %s) ON CONFLICT DO NOTHING",
-                    (item[idx], builds_from))
+                    "INSERT INTO item_builds_from (id, builds_from, amount) VALUES (%s, %s, %s)",
+                    (item[idx], builds_from_item, builds_from[builds_from_item]))
 
         if item["into"] is not None:
             for builds_into in ast.literal_eval(item["into"]):
@@ -99,18 +111,23 @@ def insert_item(file):
 
 
 def insert_summoner_spells(file):
-    j = json.load(open(file, encoding="utf-8"))
+    df = pd.read_csv(file, encoding="utf-8").replace({np.nan: None})
 
     psql = PostgreSQLConnector.create_from_config("../config.ini")
     cursor = psql.connect()
 
-    for row in j["data"]:
-        ssp = j["data"][row]
-
+    for i, ssp in df.iterrows():
+        ssp['id'] = ssp['key']
+        ssp['cooldown'] = ast.literal_eval(ssp['cooldown'])
+        ssp['cost'] = ast.literal_eval(ssp['cost'])
         ssp['datavalues'] = Json(ssp['datavalues'])
         ssp['vars'] = Json(ssp['vars'])
         ssp['image'] = Json(ssp['image'])
-        ssp['effect'] = [a[0] if isinstance(a, list) else a for a in ssp['effect']]
+        ssp['effect'] = [a[0] if isinstance(a, list) else a for a in ast.literal_eval(ssp['effect'])]
+        ssp['effectBurn'] = [int(a[0]) if isinstance(a, list) else a for a in ast.literal_eval(ssp['effectBurn'])]
+        ssp['modes'] = ast.literal_eval(ssp['modes'])
+        ssp['range'] = ast.literal_eval(ssp['range'])
+        ssp["image"] = None
 
         cursor.execute("""INSERT INTO summoner_spells (
                     id, name, description, tooltip, maxrank, cooldown, cooldown_burn, cost, cost_burn, datavalues, 
@@ -155,12 +172,21 @@ def save_all_champions(output):
     champions.to_csv(output)
 
 
+def save_all_sums(output):
+    summoner_json = download_riot_data("summoner.json")
+    summoner = pd.DataFrame.from_dict(summoner_json["data"], orient="index")
+    summoner.to_csv(output)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         prog='Riot Data Creator',
         description='Inserts riot data into the database')
 
-    parser.add_argument('method', choices=["save_all_items", "save_all_champions", "insert_champions"])
+    parser.add_argument('method', choices=[
+        "save_all_items", "save_all_champions", "save_all_sums",
+        "insert_champions", "insert_items", "insert_summoner_spells"
+    ])
     parser.add_argument('-f', '--file')
     args = parser.parse_args()
 
@@ -168,5 +194,13 @@ if __name__ == '__main__':
         save_all_items(args.file)
     elif args.method == "save_all_champions":
         save_all_champions(args.file)
-    else:
+    elif args.method == "save_all_sums":
+        save_all_sums(args.file)
+    elif args.method == "insert_champions":
         insert_champions(args.file)
+    elif args.method == "insert_items":
+        insert_items(args.file)
+    elif args.method == "insert_summoner_spells":
+        insert_summoner_spells(args.file)
+    else:
+        pass
