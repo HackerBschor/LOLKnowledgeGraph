@@ -76,7 +76,7 @@ MERGE (l: Lane {laneID: row.lane})
 LOAD CSV WITH HEADERS FROM 'file:///matches.csv' AS row
 MERGE (match:Match {matchID: toInteger(row.cmid)})
   ON CREATE SET
-    match.gameCreation = datetime(REPLACE(row.game_creation, ' ', 'T') + 'Z'), match.gameDuration = time(row.game_duration),
+    match.gameCreation = datetime(replace(row.game_creation, ' ', 'T') + 'Z'), match.gameDuration = time(row.game_duration),
     match.gameID = toInteger(row.game_id), match.gameMode = row.game_mode, match.gameType = row.game_type,
     match.gameVersion = row.game_version, match.platformID = row.platform_id;
 
@@ -122,21 +122,26 @@ MATCH (item3: Item {itemID: toInteger(row.statsItem3)})
 MATCH (item4: Item {itemID: toInteger(row.statsItem4)})
 MATCH (item5: Item {itemID: toInteger(row.statsItem5)})
 MATCH (item6: Item {itemID: toInteger(row.statsItem6)})
-MERGE (player)-[pi:PLAYS_IN]->(queue)
+MERGE (pi: PlayerInMatch {
+  participantID: toInteger(row.participant_id),
+  matchID: toInteger(row.cmid),
+  queueID: toInteger(row.cmid) * 10 + toInteger(row.team_id)/100,
+  accountID: row.account_id, platformID: row.platform_id})
+MERGE (player)-[piq1:PLAYS_IN]->(pi)
+MERGE (pi)-[piq1:PLAYS_IN]->(queue)
 MERGE (pi)-[pc:PLAYS_CHAMP]->(champion)
 MERGE (pi)-[ps1:PLAYS_SUMMONERSPELL]->(summonerspell1)
 MERGE (pi)-[ps2:PLAYS_SUMMONERSPELL]->(summonerspell2)
 MERGE (pi)-[pr:PLAYS_ROLE]->(role)
 MERGE (pi)-[pl:PLAYS_LANE]->(lane)
-MERGE (pi)-[pi0:PLAYS_Item]->(item0)
-MERGE (pi)-[pi1:PLAYS_Item]->(item1)
-MERGE (pi)-[pi2:PLAYS_Item]->(item2)
-MERGE (pi)-[pi3:PLAYS_Item]->(item3)
-MERGE (pi)-[pi4:PLAYS_Item]->(item4)
-MERGE (pi)-[pi5:PLAYS_Item]->(item5)
-MERGE (pi)-[pi6:PLAYS_Item]->(item6)
+MERGE (pi)-[pi0:PLAYS_ITEM]->(item0)
+MERGE (pi)-[pi1:PLAYS_ITEM]->(item1)
+MERGE (pi)-[pi2:PLAYS_ITEM]->(item2)
+MERGE (pi)-[pi3:PLAYS_ITEM]->(item3)
+MERGE (pi)-[pi4:PLAYS_ITEM]->(item4)
+MERGE (pi)-[pi5:PLAYS_ITEM]->(item5)
+MERGE (pi)-[pi6:PLAYS_ITEM]->(item6)
     ON CREATE SET
-        pi.participantID = toInteger(row.participant_id),
         ps1.sumNo = 1, ps2.sumNo = 1,
         pi0.itemNo = 0, pi1.itemNo = 1, pi2.itemNo = 2, pi3.itemNo = 3, pi4.itemNo = 4, pi5.itemNo = 5, pi6.itemNo = 6,
         pi.assists = toInteger(row.statsAssists),
@@ -156,7 +161,6 @@ MERGE (pi)-[pi6:PLAYS_Item]->(item6)
         pi.goldEarned = toInteger(row.statsGoldearned),
         pi.goldSpent = toInteger(row.statsGoldspent),
         pi.inhibitorKills = toInteger(row.statsInhibitorkills),
-
         pi.killingSprees = toInteger(row.statsKillingsprees),
         pi.kills = toInteger(row.statsKills),
         pi.largestCriticalStrike = toInteger(row.statsLargestcriticalstrike),
