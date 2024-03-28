@@ -4,6 +4,8 @@ import psycopg2
 import argparse
 import io
 
+from sqlalchemy import create_engine
+
 
 class PostgreSQLConnector:
     def __init__(self, host, database, user, password):
@@ -17,7 +19,7 @@ class PostgreSQLConnector:
     @staticmethod
     def create_from_config(config_file):
         config = configparser.ConfigParser()
-        config.read("../config.ini")
+        config.read(config_file)
         return PostgreSQLConnector(
             config["PostgreSQL"]["host"],
             config["PostgreSQL"]["database"],
@@ -41,6 +43,9 @@ class PostgreSQLConnector:
         output.getvalue()  # contents = output.getvalue()
         cur.copy_from(output, table_name, null="")  # null values become ''
         self.close()
+
+    def create_engine(self):
+        return create_engine(self.connection_url, echo=False)
 
 
 def execute(sql_file: str) -> None:
