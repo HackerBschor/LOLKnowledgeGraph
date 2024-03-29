@@ -386,8 +386,8 @@ CALL {
     }
     CALL {
         WITH * MATCH (p)
-        WHERE toFloat(gamesMiddle) / toFloat(gamesTop + gamesJungle + gamesMiddle + gamesBottom + gamesSupport) > 0.5
+        WHERE toFloat(gamesSupport) / toFloat(gamesTop + gamesJungle + gamesMiddle + gamesBottom + gamesSupport) > 0.5
         MERGE (p)-[hp:HAS_POSITION]->(ps)
         ON CREATE SET hp.winningRate = toFloat(gamesWonSupport) / toFloat(gamesSupport)
     }
-} IN TRANSACTIONS OF 1000 ROWS;
+} IN TRANSACTIONS OF 10000 ROWS;
