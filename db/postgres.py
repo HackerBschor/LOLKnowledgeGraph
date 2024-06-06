@@ -4,17 +4,18 @@ import psycopg2
 import argparse
 import io
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, Engine
+from psycopg2.extensions import cursor, connection
 
 
 class PostgreSQLConnector:
-    def __init__(self, host, database, user, password):
-        self.host = host
-        self.database = database
-        self.user = user
-        self.password = password
-        self.connection_url = f"postgresql+psycopg2://{user}:{password}@{host}/{database}"
-        self.conn = None
+    def __init__(self, host: str, database: str, user: str, password: str):
+        self.host: str = host
+        self.database: str = database
+        self.user: str = user
+        self.password: str = password
+        self.connection_url: str = f"postgresql+psycopg2://{user}:{password}@{host}/{database}"
+        self.conn: [None, connection] = None
 
     @staticmethod
     def create_from_config(config_file):
@@ -26,11 +27,11 @@ class PostgreSQLConnector:
             config["PostgreSQL"]["user"],
             config["PostgreSQL"]["password"])
 
-    def connect(self):
+    def connect(self) -> cursor:
         self.conn = psycopg2.connect(host=self.host, database=self.database, user=self.user, password=self.password)
         return self.conn.cursor()
 
-    def close(self):
+    def close(self) -> None:
         self.conn.commit()
         self.conn.close()
 
@@ -44,17 +45,18 @@ class PostgreSQLConnector:
         cur.copy_from(output, table_name, null="")  # null values become ''
         self.close()
 
-    def create_engine(self):
+    def create_engine(self) -> Engine:
         return create_engine(self.connection_url, echo=False)
 
 
 def execute(sql_file: str) -> None:
-    psql = PostgreSQLConnector.create_from_config("config.ini")
-    cur = psql.connect()
+    psql: PostgreSQLConnector = PostgreSQLConnector.create_from_config("config.ini")
+    cur: cursor = psql.connect()
+
     with open(sql_file, "r") as f:
         sql = f.read()
-        print(sql)
         cur.execute(sql)
+
     cur.close()
 
 

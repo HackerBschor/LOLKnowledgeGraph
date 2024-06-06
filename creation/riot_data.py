@@ -2,40 +2,41 @@ import numpy as np
 import pandas as pd
 import argparse
 import requests
+from requests import Response
 import json
 import ast
 
 from psycopg2.extras import Json
 
 from db.postgres import PostgreSQLConnector
+from psycopg2.extensions import cursor as Cursor
 
 
-def get_versions(url="https://ddragon.leagueoflegends.com/api/versions.json"):
+def get_versions(url="https://ddragon.leagueoflegends.com/api/versions.json") -> json:
     return download_data(url)
 
 
-def download_data(url):
+def download_data(url: str) -> json:
     print(f'\rDownloading {url} ', end="")
-    response = requests.get(url)
+    response: Response = requests.get(url)
     if response.status_code != 200:
         return print(f'Error: {response}')
-
     print(f"Done")
-
     return response.json()
 
 
-def download_riot_data(ressource, url='https://ddragon.leagueoflegends.com/cdn', version='14.5.1', language='en_US'):
-    base_url = f"{url}/{version}/data/{language}"
+def download_riot_data(ressource: str, url: str = 'https://ddragon.leagueoflegends.com/cdn', version: str = '14.5.1',
+                       language: str = 'en_US') -> json:
+    base_url: str = f"{url}/{version}/data/{language}"
     return download_data(f'{base_url}/{ressource}')
 
 
-def insert_champions(file):
-    df = pd.read_csv(file, encoding="utf-8").replace({np.nan: None})
-    idx = df.columns[0]
+def insert_champions(file: str) -> None:
+    df: pd.DataFrame = pd.read_csv(file, encoding="utf-8").replace({np.nan: None})
+    idx: int = df.columns[0]
 
-    psql = PostgreSQLConnector.create_from_config("../config.ini")
-    cursor = psql.connect()
+    psql: PostgreSQLConnector = PostgreSQLConnector.create_from_config("../config.ini")
+    cursor: Cursor = psql.connect()
 
     for _, champion in df.iterrows():
         champion["info"] = json.loads(champion["info"].replace("\'", "\""))
@@ -55,12 +56,12 @@ def insert_champions(file):
     psql.close()
 
 
-def insert_items(file):
-    df = pd.read_csv(file, encoding="utf-8").replace({np.nan: None})
-    idx = df.columns[0]
+def insert_items(file: str) -> None:
+    df: pd.DataFrame = pd.read_csv(file, encoding="utf-8").replace({np.nan: None})
+    idx: int = df.columns[0]
 
-    psql = PostgreSQLConnector.create_from_config("../config.ini")
-    cursor = psql.connect()
+    psql: PostgreSQLConnector = PostgreSQLConnector.create_from_config("../config.ini")
+    cursor: Cursor = psql.connect()
 
     for i, item in df.iterrows():
         item["image"] = None if item["image"] is None else ast.literal_eval(item["image"])
@@ -85,7 +86,7 @@ def insert_items(file):
                 cursor.execute("INSERT INTO item_tags (id, tag) VALUES (%s, %s)", (item[idx], tag))
 
         if item["from"] is not None:
-            builds_from = {}
+            builds_from: dict = {}
             for builds_from_item in ast.literal_eval(item["from"]):
                 if builds_from is None:
                     continue
@@ -110,11 +111,11 @@ def insert_items(file):
     psql.close()
 
 
-def insert_summoner_spells(file):
-    df = pd.read_csv(file, encoding="utf-8").replace({np.nan: None})
+def insert_summoner_spells(file: str) -> json:
+    df: pd.DataFrame = pd.read_csv(file, encoding="utf-8").replace({np.nan: None})
 
-    psql = PostgreSQLConnector.create_from_config("../config.ini")
-    cursor = psql.connect()
+    psql: PostgreSQLConnector = PostgreSQLConnector.create_from_config("../config.ini")
+    cursor: Cursor = psql.connect()
 
     for i, ssp in df.iterrows():
         ssp['id'] = ssp['key']
@@ -143,38 +144,38 @@ def insert_summoner_spells(file):
     psql.close()
 
 
-def get_all_items():
-    versions = get_versions()
+def get_all_items() -> pd.DataFrame:
+    versions: json = get_versions()
 
-    items_full = pd.DataFrame()
+    items_full: pd.DataFrame = pd.DataFrame()
     for version in versions:
         if "lolpatch" in version:
             break
 
-        items_json = download_riot_data("item.json", version=version)
-        df_items = pd.DataFrame.from_dict(items_json["data"], orient='index')
+        items_json: json = download_riot_data("item.json", version=version)
+        df_items: pd.DataFrame = pd.DataFrame.from_dict(items_json["data"], orient='index')
 
-        new_index_values = df_items.index.difference(items_full.index)
+        new_index_values: pd.Index = df_items.index.difference(items_full.index)
         # Append only the rows with index values not already in the overall DataFrame
-        items_full = pd.concat([items_full, df_items.loc[new_index_values]])
+        items_full: pd.DataFrame = pd.concat([items_full, df_items.loc[new_index_values]])
 
     return items_full
 
 
-def save_all_items(output):
-    items_full = get_all_items()
+def save_all_items(output: str) -> None:
+    items_full: pd.DataFrame = get_all_items()
     items_full.to_csv(output)
 
 
-def save_all_champions(output):
-    champion_json = download_riot_data("champion.json")
-    champions = pd.DataFrame.from_dict(champion_json["data"], orient="index")
+def save_all_champions(output: str) -> None:
+    champion_json: json = download_riot_data("champion.json")
+    champions: pd.DataFrame = pd.DataFrame.from_dict(champion_json["data"], orient="index")
     champions.to_csv(output)
 
 
-def save_all_sums(output):
-    summoner_json = download_riot_data("summoner.json")
-    summoner = pd.DataFrame.from_dict(summoner_json["data"], orient="index")
+def save_all_sums(output) -> None:
+    summoner_json: json = download_riot_data("summoner.json")
+    summoner: pd.DataFrame = pd.DataFrame.from_dict(summoner_json["data"], orient="index")
     summoner.to_csv(output)
 
 
