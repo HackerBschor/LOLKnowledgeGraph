@@ -2,17 +2,18 @@ import argparse
 import pandas as pd
 from db.postgres import PostgreSQLConnector
 from psycopg2.extras import Json
+from psycopg2.extensions import cursor, connection
 
 
-def insert_kaggle_data(file):
-    psqlc = PostgreSQLConnector.create_from_config("../config.ini")
-    cur = psqlc.connect()
+def insert_kaggle_data(file: str) -> None:
+    psqlc: PostgreSQLConnector = PostgreSQLConnector.create_from_config("../config.ini")
+    cur: cursor = psqlc.connect()
 
-    df = pd.read_pickle(file)
+    df: pd.DataFrame = pd.read_pickle(file)
 
     for i, (x, row) in enumerate(df.iterrows()):
-        print("\r", i / len(df) * 100, "%", end="")
-        row = row.fillna(0)
+        print("\r", float(i) / float(len(df)) * 100.0, "%", end="")
+        row: pd.Series = row.fillna(0)
         row['gameCreation'] = pd.to_datetime(row['gameCreation'] * 1000000)
         row['gameDuration'] = pd.to_timedelta(row['gameDuration'] * 1000000000)
         cur.execute(
