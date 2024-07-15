@@ -1,8 +1,8 @@
 import argparse
 import pandas as pd
-from db.postgres import PostgreSQLConnector
+from util.db.postgres import PostgreSQLConnector
 from psycopg2.extras import Json
-from psycopg2.extensions import cursor, connection
+from psycopg2.extensions import cursor
 
 
 def insert_kaggle_data(file: str) -> None:
@@ -37,5 +37,5 @@ if __name__ == '__main__':
         prog='Kaggle Data Creator',
         description='Inserts kaggle data into the database and applies data transformations')
 
-    parser.add_argument('file')
+    parser.add_argument('--file', "-f")
     insert_kaggle_data(parser.parse_args().file)

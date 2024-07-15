@@ -8,7 +8,7 @@ import ast
 
 from psycopg2.extras import Json
 
-from db.postgres import PostgreSQLConnector
+from util.db.postgres import PostgreSQLConnector
 from psycopg2.extensions import cursor as Cursor
 
 
